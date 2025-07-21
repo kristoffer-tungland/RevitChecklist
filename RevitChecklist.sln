@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36310.24
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChecklistAddin", "src\Addin\ChecklistAddin.csproj", "{80C00A4A-A18A-9428-656D-3645F3D23C7D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChecklistServer", "src\Server\ChecklistServer\ChecklistServer.csproj", "{7583B043-BFD1-136B-DE61-437EA0BE5341}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{089100B1-113F-4E66-888A-E83F3999EAFD}"
+	ProjectSection(SolutionItems) = preProject
+		src\Client\index.html = src\Client\index.html
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{80C00A4A-A18A-9428-656D-3645F3D23C7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80C00A4A-A18A-9428-656D-3645F3D23C7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80C00A4A-A18A-9428-656D-3645F3D23C7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80C00A4A-A18A-9428-656D-3645F3D23C7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7583B043-BFD1-136B-DE61-437EA0BE5341}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7583B043-BFD1-136B-DE61-437EA0BE5341}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7583B043-BFD1-136B-DE61-437EA0BE5341}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7583B043-BFD1-136B-DE61-437EA0BE5341}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {217369C4-1DFD-4FCB-9004-CD395ED6172F}
+	EndGlobalSection
+EndGlobal

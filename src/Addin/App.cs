@@ -16,7 +16,9 @@ namespace ChecklistAddin
 
         public Result OnStartup(UIControlledApplication application)
         {
-            ChecklistServer.RevitApi.Initialize(application.ControlledApplication);
+            // Subscribe to Idling event to get UIApplication as soon as possible
+            application.Idling += OnIdling;
+
             _server = new ChecklistServer.Server(AddinConfig.Url);
             _server.Start();
 
@@ -30,6 +32,18 @@ namespace ChecklistAddin
             panel.AddItem(buttonData);
 
             return Result.Succeeded;
+        }
+
+        private void OnIdling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e)
+        {
+            // Initialize RevitApi with UIApplication when Revit becomes idle
+            if (!ChecklistServer.RevitApi.IsInitialized && sender is UIApplication uiApp)
+            {
+                ChecklistServer.RevitApi.Initialize(uiApp);
+                
+                // Unsubscribe after initialization
+                uiApp.Idling -= OnIdling;
+            }
         }
 
         public Result OnShutdown(UIControlledApplication application)
@@ -46,6 +60,12 @@ namespace ChecklistAddin
         {
             try
             {
+                // Ensure RevitApi is initialized (backup initialization)
+                if (!ChecklistServer.RevitApi.IsInitialized)
+                {
+                    ChecklistServer.RevitApi.Initialize(commandData.Application);
+                }
+                
                 Process.Start(new ProcessStartInfo(AddinConfig.Url) { UseShellExecute = true });
                 return Result.Succeeded;
             }

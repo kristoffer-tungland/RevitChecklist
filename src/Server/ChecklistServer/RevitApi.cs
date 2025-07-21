@@ -1,36 +1,32 @@
-using System.Collections.Generic;
-#if NET48
-using Autodesk.Revit.ApplicationServices;
-#endif
+using Autodesk.Revit.UI;
 
 namespace ChecklistServer
 {
     public static class RevitApi
     {
-        #if NET48
-        private static object? _app;
+        private static UIApplication? _uiApp;
 
-        public static void Initialize(object app)
+        public static void Initialize(UIApplication app)
         {
-            _app = app;
+            _uiApp = app;
         }
+
+        public static bool IsInitialized => _uiApp != null;
+
+        private static UIApplication UIApp => _uiApp ?? throw new InvalidOperationException("Revit API not initialized. Call Initialize() first with UIApplication.");
 
         public static string GetCurrentUsername()
         {
             try
             {
-                return (string?)(_app?.GetType().GetProperty("Username")?.GetValue(_app)) ?? string.Empty;
+                var user = UIApp.Application.Username;
+                return string.IsNullOrEmpty(user) ? "Unknown User" : user;
             }
             catch
             {
-                return string.Empty;
+                return Environment.UserName ?? "Unknown User";
             }
         }
-        #else
-        public static void Initialize(object? app) { }
-
-        public static string GetCurrentUsername() => string.Empty;
-        #endif
 
         public static List<string> PromptForElementSelection(string message, bool multiple)
         {
