@@ -5,26 +5,90 @@
     <title>Revit Quality Checklist</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
+        h2 { margin-top: 30px; }
+        ul { list-style: none; padding-left: 0; }
+        li { margin-bottom: 5px; }
     </style>
 </head>
 <body>
     <h1>Revit Quality Checklist</h1>
     <div id="user"></div>
-    <button id="statusBtn">Check Server Status</button>
-    <pre id="output"></pre>
+
+    <h2>Create Template</h2>
+    <input id="tmplName" placeholder="Template name">
+    <button id="createTemplate">Create Template</button>
+
+    <h2>Templates</h2>
+    <ul id="templates"></ul>
+
+    <h2>Checks</h2>
+    <ul id="checks"></ul>
+
     <script>
-        async function fetchUser() {
-            const resp = await fetch('/api/user');
-            const data = await resp.json();
-            document.getElementById('user').textContent = 'User: ' + data.user;
-        }
-        async function checkStatus() {
-            const resp = await fetch('/api/status');
-            const data = await resp.json();
-            document.getElementById('output').textContent = JSON.stringify(data, null, 2);
-        }
-        document.getElementById('statusBtn').addEventListener('click', checkStatus);
-        fetchUser();
+    async function fetchUser() {
+        const resp = await fetch('/api/user');
+        const data = await resp.json();
+        document.getElementById('user').textContent = 'User: ' + data.user;
+    }
+
+    async function loadTemplates() {
+        const resp = await fetch('/api/templates');
+        const tpls = await resp.json();
+        const list = document.getElementById('templates');
+        list.innerHTML = '';
+        tpls.forEach(t => {
+            const li = document.createElement('li');
+            li.textContent = t.name;
+            const btn = document.createElement('button');
+            btn.textContent = 'Create Check';
+            btn.onclick = () => createCheck(t.id);
+            li.appendChild(btn);
+            list.appendChild(li);
+        });
+    }
+
+    async function loadChecks() {
+        const resp = await fetch('/api/checks');
+        const checks = await resp.json();
+        const list = document.getElementById('checks');
+        list.innerHTML = '';
+        checks.forEach(c => {
+            const li = document.createElement('li');
+            li.textContent = c.id + ' (' + c.status + ')';
+            list.appendChild(li);
+        });
+    }
+
+    async function createTemplate() {
+        const name = document.getElementById('tmplName').value.trim();
+        if (!name) return;
+        await fetch('/api/templates', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, sections: [] })
+        });
+        document.getElementById('tmplName').value = '';
+        loadTemplates();
+    }
+
+    async function createCheck(tid) {
+        const resp = await fetch('/api/templates');
+        const templates = await resp.json();
+        const t = templates.find(x => x.id === tid);
+        if (!t) return;
+        await fetch('/api/checks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ templateUniqueId: t.dataStorageUniqueId, templateSnapshot: t, checkedElements: [], answers: [] })
+        });
+        loadChecks();
+    }
+
+    document.getElementById('createTemplate').addEventListener('click', createTemplate);
+
+    fetchUser();
+    loadTemplates();
+    loadChecks();
     </script>
 </body>
 </html>
