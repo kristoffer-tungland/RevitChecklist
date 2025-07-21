@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Revit Quality Checklist</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Revit Quality Checklist</h1>
+    <div id="user"></div>
+    <button id="statusBtn">Check Server Status</button>
+    <pre id="output"></pre>
+    <script>
+        async function fetchUser() {
+            const resp = await fetch('/api/user');
+            const data = await resp.json();
+            document.getElementById('user').textContent = 'User: ' + data.user;
+        }
+        async function checkStatus() {
+            const resp = await fetch('/api/status');
+            const data = await resp.json();
+            document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+        }
+        document.getElementById('statusBtn').addEventListener('click', checkStatus);
+        fetchUser();
+    </script>
+</body>
+</html>

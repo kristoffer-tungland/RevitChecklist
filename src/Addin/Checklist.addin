@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>ChecklistAddin</Name>
+    <Assembly>ChecklistAddin.dll</Assembly>
+    <AddInId>8B04CB1B-5AA3-4F2C-B9AE-1B9D5300D110</AddInId>
+    <FullClassName>ChecklistAddin.App</FullClassName>
+    <VendorId>CODX</VendorId>
+    <VendorDescription>Codex</VendorDescription>
+  </AddIn>
+</RevitAddIns>
