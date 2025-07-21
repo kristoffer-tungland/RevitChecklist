@@ -16,6 +16,7 @@ namespace ChecklistAddin
 
         public Result OnStartup(UIControlledApplication application)
         {
+            ChecklistServer.RevitApi.Initialize(application.ControlledApplication);
             _server = new ChecklistServer.Server(AddinConfig.Url);
             _server.Start();
 

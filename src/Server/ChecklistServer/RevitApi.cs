@@ -1,19 +1,40 @@
 using System.Collections.Generic;
+#if NET48
+using Autodesk.Revit.ApplicationServices;
+#endif
 
 namespace ChecklistServer
 {
     public static class RevitApi
     {
-        // Placeholder methods simulating Revit API interactions
+        #if NET48
+        private static object? _app;
+
+        public static void Initialize(object app)
+        {
+            _app = app;
+        }
+
         public static string GetCurrentUsername()
         {
-            return "RevitUser"; // Replace with actual API call
+            try
+            {
+                return (string?)(_app?.GetType().GetProperty("Username")?.GetValue(_app)) ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
+        #else
+        public static void Initialize(object? app) { }
+
+        public static string GetCurrentUsername() => string.Empty;
+        #endif
 
         public static List<string> PromptForElementSelection(string message, bool multiple)
         {
-            // In a real implementation, this method would invoke Revit's element selection dialog.
-            // Here we return an empty list as a placeholder.
+            // TODO: implement element selection using UIDocument when available
             return new List<string>();
         }
     }
