@@ -5,26 +5,145 @@
     <title>Revit Quality Checklist</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
+        h2 { margin-top: 30px; }
+        ul { list-style: none; padding-left: 0; }
+        li { margin-bottom: 5px; }
+        .section { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+        .item { margin-left: 20px; }
     </style>
 </head>
 <body>
     <h1>Revit Quality Checklist</h1>
     <div id="user"></div>
-    <button id="statusBtn">Check Server Status</button>
-    <pre id="output"></pre>
+
+    <h2>Create Template</h2>
+    <input id="tmplName" placeholder="Template name">
+    <div id="sections"></div>
+    <button id="addSection">Add Section</button>
+    <button id="saveTemplate">Save Template</button>
+
+    <h2>Templates</h2>
+    <ul id="templates"></ul>
+
+    <h2>Checks</h2>
+    <ul id="checks"></ul>
+
     <script>
-        async function fetchUser() {
-            const resp = await fetch('/api/user');
-            const data = await resp.json();
-            document.getElementById('user').textContent = 'User: ' + data.user;
-        }
-        async function checkStatus() {
-            const resp = await fetch('/api/status');
-            const data = await resp.json();
-            document.getElementById('output').textContent = JSON.stringify(data, null, 2);
-        }
-        document.getElementById('statusBtn').addEventListener('click', checkStatus);
-        fetchUser();
+    async function fetchUser() {
+        const resp = await fetch('/api/user');
+        const data = await resp.json();
+        document.getElementById('user').textContent = 'User: ' + data.user;
+    }
+
+    function addSection(name='') {
+        const section = document.createElement('div');
+        section.className = 'section';
+        section.innerHTML = `<input class="section-name" placeholder="Section name" value="${name}">
+            <div class="items"></div>
+            <button class="add-item">Add Item</button>`;
+        section.querySelector('.add-item').onclick = () => addItem(section.querySelector('.items'));
+        document.getElementById('sections').appendChild(section);
+    }
+
+    function addItem(container, data) {
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = `<input class="item-label" placeholder="Question" value="${data?.label || ''}"> 
+            <select class="item-type">
+                <option value="checkbox">Checkbox</option>
+                <option value="text">Text</option>
+                <option value="number">Number</option>
+                <option value="dropdown">Dropdown</option>
+            </select>
+            <input class="item-options" placeholder="Comma options" style="display:none">`;
+        const typeSel = item.querySelector('.item-type');
+        const optInput = item.querySelector('.item-options');
+        if(data?.type) typeSel.value = data.type;
+        if(data?.options) { optInput.value = data.options.join(','); optInput.style.display = 'inline'; }
+        typeSel.onchange = () => {
+            if(typeSel.value === 'dropdown') optInput.style.display = 'inline';
+            else { optInput.style.display = 'none'; optInput.value = ''; }
+        };
+        container.appendChild(item);
+    }
+
+    async function loadTemplates() {
+        const resp = await fetch('/api/templates');
+        const tpls = await resp.json();
+        const list = document.getElementById('templates');
+        list.innerHTML = '';
+        tpls.forEach(t => {
+            const li = document.createElement('li');
+            li.textContent = t.name;
+            const btn = document.createElement('button');
+            btn.textContent = 'Create Check';
+            btn.onclick = () => createCheck(t.id);
+            li.appendChild(btn);
+            list.appendChild(li);
+        });
+    }
+
+    async function loadChecks() {
+        const resp = await fetch('/api/checks');
+        const checks = await resp.json();
+        const list = document.getElementById('checks');
+        list.innerHTML = '';
+        checks.forEach(c => {
+            const li = document.createElement('li');
+            li.textContent = c.id + ' (' + c.status + ')';
+            list.appendChild(li);
+        });
+    }
+
+    async function saveTemplate() {
+        const name = document.getElementById('tmplName').value.trim();
+        if (!name) return;
+        const sections = [];
+        document.querySelectorAll('#sections .section').forEach(secEl => {
+            const sName = secEl.querySelector('.section-name').value.trim();
+            if(!sName) return;
+            const sec = { id: crypto.randomUUID(), name: sName, items: [] };
+            secEl.querySelectorAll('.items .item').forEach(it => {
+                const label = it.querySelector('.item-label').value.trim();
+                if(!label) return;
+                const type = it.querySelector('.item-type').value;
+                const options = it.querySelector('.item-options').value
+                    .split(',').map(o=>o.trim()).filter(o=>o);
+                const item = { id: crypto.randomUUID(), label, type };
+                if(options.length) item.options = options;
+                sec.items.push(item);
+            });
+            sections.push(sec);
+        });
+        await fetch('/api/templates', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, sections })
+        });
+        document.getElementById('tmplName').value = '';
+        document.getElementById('sections').innerHTML = '';
+        loadTemplates();
+    }
+
+    async function createCheck(tid) {
+        const resp = await fetch('/api/templates');
+        const templates = await resp.json();
+        const t = templates.find(x => x.id === tid);
+        if (!t) return;
+        await fetch('/api/checks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ templateUniqueId: t.dataStorageUniqueId, templateSnapshot: t, checkedElements: [], answers: [] })
+        });
+        loadChecks();
+    }
+
+    document.getElementById('addSection').addEventListener('click', () => addSection());
+    document.getElementById('saveTemplate').addEventListener('click', saveTemplate);
+
+    fetchUser();
+    loadTemplates();
+    loadChecks();
     </script>
 </body>
 </html>

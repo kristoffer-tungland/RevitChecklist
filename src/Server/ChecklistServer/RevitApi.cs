@@ -15,6 +15,8 @@ namespace ChecklistServer
 
         private static UIApplication UIApp => _uiApp ?? throw new InvalidOperationException("Revit API not initialized. Call Initialize() first with UIApplication.");
 
+        public static UIDocument UIDoc => UIApp.ActiveUIDocument;
+
         public static string GetCurrentUsername()
         {
             try

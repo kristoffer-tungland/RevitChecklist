@@ -3,6 +3,8 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 using ChecklistServer.Models;
 
 namespace ChecklistServer
@@ -83,7 +85,205 @@ namespace ChecklistServer
                 WriteJson(res, new { status = "ok", selectedElementUniqueIds = elements });
                 return;
             }
+
+            if (req.Url.AbsolutePath.StartsWith("/api/templates"))
+            {
+                HandleTemplates(req, res);
+                return;
+            }
+
+            if (req.Url.AbsolutePath.StartsWith("/api/checks"))
+            {
+                HandleChecks(req, res);
+                return;
+            }
             res.StatusCode = 404;
+        }
+
+        private void HandleTemplates(HttpListenerRequest req, HttpListenerResponse res)
+        {
+            if (req.HttpMethod == "GET" && req.Url.AbsolutePath == "/api/templates")
+            {
+                var templates = LoadTemplates();
+                WriteJson(res, templates);
+                return;
+            }
+            if (req.HttpMethod == "POST" && req.Url.AbsolutePath == "/api/templates")
+            {
+                using var reader = new StreamReader(req.InputStream, req.ContentEncoding);
+                var body = reader.ReadToEnd();
+                var template = JsonSerializer.Deserialize<Template>(body) ?? new Template();
+                template.Id = Guid.NewGuid();
+                template.CreatedBy = RevitApi.GetCurrentUsername();
+                template.CreatedDate = DateTime.UtcNow;
+                template.ModifiedBy = template.CreatedBy;
+                template.ModifiedDate = template.CreatedDate;
+                var json = JsonSerializer.Serialize(template);
+                template.DataStorageUniqueId = DataStorageService.SaveJson(json);
+                WriteJson(res, template);
+                return;
+            }
+
+            if (req.HttpMethod == "PUT" && req.Url.AbsolutePath.StartsWith("/api/templates/"))
+            {
+                var idStr = req.Url.AbsolutePath.Substring("/api/templates/".Length);
+                if (Guid.TryParse(idStr, out var id))
+                {
+                    var templates = LoadTemplates();
+                    var tmpl = templates.FirstOrDefault(t => t.Id == id);
+                    if (tmpl == null) { res.StatusCode = 404; return; }
+                    using var reader = new StreamReader(req.InputStream, req.ContentEncoding);
+                    var body = reader.ReadToEnd();
+                    var update = JsonSerializer.Deserialize<Template>(body);
+                    if (update != null)
+                    {
+                        tmpl.Name = update.Name;
+                        tmpl.Description = update.Description;
+                        tmpl.Sections = update.Sections;
+                        tmpl.Archived = update.Archived;
+                        tmpl.ModifiedBy = RevitApi.GetCurrentUsername();
+                        tmpl.ModifiedDate = DateTime.UtcNow;
+                        DataStorageService.SaveJson(JsonSerializer.Serialize(tmpl), tmpl.DataStorageUniqueId);
+                        WriteJson(res, tmpl);
+                        return;
+                    }
+                }
+            }
+
+            if (req.HttpMethod == "DELETE" && req.Url.AbsolutePath.StartsWith("/api/templates/"))
+            {
+                var idStr = req.Url.AbsolutePath.Substring("/api/templates/".Length);
+                if (Guid.TryParse(idStr, out var id))
+                {
+                    var templates = LoadTemplates();
+                    var tmpl = templates.FirstOrDefault(t => t.Id == id);
+                    if (tmpl == null) { res.StatusCode = 404; return; }
+                    DataStorageService.Delete(tmpl.DataStorageUniqueId);
+                    WriteJson(res, new { status = "ok" });
+                    return;
+                }
+            }
+
+            if (req.HttpMethod == "POST" && req.Url.AbsolutePath.EndsWith("/archive"))
+            {
+                var idStr = req.Url.AbsolutePath.Substring("/api/templates/".Length);
+                idStr = idStr.Replace("/archive", string.Empty);
+                if (Guid.TryParse(idStr, out var id))
+                {
+                    var templates = LoadTemplates();
+                    var tmpl = templates.FirstOrDefault(t => t.Id == id);
+                    if (tmpl == null) { res.StatusCode = 404; return; }
+                    tmpl.Archived = true;
+                    tmpl.ModifiedBy = RevitApi.GetCurrentUsername();
+                    tmpl.ModifiedDate = DateTime.UtcNow;
+                    DataStorageService.SaveJson(JsonSerializer.Serialize(tmpl), tmpl.DataStorageUniqueId);
+                    WriteJson(res, tmpl);
+                    return;
+                }
+            }
+
+            res.StatusCode = 404;
+        }
+
+        private void HandleChecks(HttpListenerRequest req, HttpListenerResponse res)
+        {
+            if (req.HttpMethod == "GET" && req.Url.AbsolutePath == "/api/checks")
+            {
+                WriteJson(res, LoadChecks());
+                return;
+            }
+
+            if (req.HttpMethod == "POST" && req.Url.AbsolutePath == "/api/checks")
+            {
+                using var reader = new StreamReader(req.InputStream, req.ContentEncoding);
+                var body = reader.ReadToEnd();
+                var check = JsonSerializer.Deserialize<Check>(body) ?? new Check();
+                check.Id = Guid.NewGuid();
+                check.CreatedBy = RevitApi.GetCurrentUsername();
+                check.CreatedDate = DateTime.UtcNow;
+                check.ModifiedBy = check.CreatedBy;
+                check.ModifiedDate = check.CreatedDate;
+                var json = JsonSerializer.Serialize(check);
+                check.DataStorageUniqueId = DataStorageService.SaveJson(json);
+                WriteJson(res, check);
+                return;
+            }
+
+            if (req.HttpMethod == "GET" && req.Url.AbsolutePath.StartsWith("/api/checks/"))
+            {
+                var idStr = req.Url.AbsolutePath.Substring("/api/checks/".Length);
+                if (Guid.TryParse(idStr, out var id))
+                {
+                    var check = LoadChecks().FirstOrDefault(c => c.Id == id);
+                    if (check == null) { res.StatusCode = 404; return; }
+                    WriteJson(res, check);
+                    return;
+                }
+            }
+
+            if (req.HttpMethod == "PUT" && req.Url.AbsolutePath.StartsWith("/api/checks/"))
+            {
+                var idStr = req.Url.AbsolutePath.Substring("/api/checks/".Length);
+                if (Guid.TryParse(idStr, out var id))
+                {
+                    var checks = LoadChecks();
+                    var chk = checks.FirstOrDefault(c => c.Id == id);
+                    if (chk == null) { res.StatusCode = 404; return; }
+                    using var reader = new StreamReader(req.InputStream, req.ContentEncoding);
+                    var body = reader.ReadToEnd();
+                    var update = JsonSerializer.Deserialize<Check>(body);
+                    if (update != null)
+                    {
+                        chk.TemplateUniqueId = update.TemplateUniqueId;
+                        chk.TemplateSnapshot = update.TemplateSnapshot;
+                        chk.CheckedElements = update.CheckedElements;
+                        chk.Answers = update.Answers;
+                        chk.Status = update.Status;
+                        chk.ModifiedBy = RevitApi.GetCurrentUsername();
+                        chk.ModifiedDate = DateTime.UtcNow;
+                        DataStorageService.SaveJson(JsonSerializer.Serialize(chk), chk.DataStorageUniqueId);
+                        WriteJson(res, chk);
+                        return;
+                    }
+                }
+            }
+
+            res.StatusCode = 404;
+        }
+
+        private static List<Template> LoadTemplates()
+        {
+            var list = new List<Template>();
+            foreach (var id in DataStorageService.GetAll())
+            {
+                var json = DataStorageService.GetJson(id);
+                if (json == null) continue;
+                try
+                {
+                    var t = JsonSerializer.Deserialize<Template>(json);
+                    if (t != null) list.Add(t);
+                }
+                catch { }
+            }
+            return list;
+        }
+
+        private static List<Check> LoadChecks()
+        {
+            var list = new List<Check>();
+            foreach (var id in DataStorageService.GetAll())
+            {
+                var json = DataStorageService.GetJson(id);
+                if (json == null) continue;
+                try
+                {
+                    var c = JsonSerializer.Deserialize<Check>(json);
+                    if (c != null && c.TemplateSnapshot != null)
+                        list.Add(c);
+                }
+                catch { }
+            }
+            return list;
         }
 
         private static void WriteJson(HttpListenerResponse res, object data)
