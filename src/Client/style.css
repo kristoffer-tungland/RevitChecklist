@@ -1,0 +1,87 @@
+:root {
+  --bg: #f4f4f4;
+  --text: #222;
+  --card-bg: #fff;
+  --card-border: #ccc;
+  --nav-bg: #fff;
+  --nav-text: #222;
+}
+[data-theme="dark"] {
+  --bg: #1d1f21;
+  --text: #f4f4f4;
+  --card-bg: #2b2b2b;
+  --card-border: #444;
+  --nav-bg: #222;
+  --nav-text: #f4f4f4;
+}
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: var(--nav-bg);
+  color: var(--nav-text);
+  border-bottom: 1px solid var(--card-border);
+}
+nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+nav a {
+  color: var(--nav-text);
+  text-decoration: none;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+nav a.active {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+}
+.theme-toggle {
+  cursor: pointer;
+}
+.page {
+  padding: 20px;
+}
+.card-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0;
+}
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 10px;
+  min-width: 200px;
+}
+.section {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.item {
+  margin-left: 20px;
+}
+.log {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  padding: 10px;
+  height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.error {
+  color: red;
+  padding: 0 20px;
+}
