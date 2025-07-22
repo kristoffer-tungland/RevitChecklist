@@ -29,6 +29,10 @@
     <h2>Checks</h2>
     <ul id="checks"></ul>
 
+    <h2>Server Log</h2>
+    <pre id="log" style="white-space:pre-wrap;border:1px solid #ccc;padding:10px;height:200px;overflow:auto;"></pre>
+    <button id="refreshLog">Refresh Log</button>
+
     <script>
     function showError(msg) {
         document.getElementById('error').textContent = msg;
@@ -146,9 +150,9 @@
         loadTemplates();
     }
 
-    async function createCheck(tid) {
-        showError('');
-        const templates = await apiFetch('/api/templates');
+  async function createCheck(tid) {
+      showError('');
+      const templates = await apiFetch('/api/templates');
         const t = templates.find(x => x.id === tid);
         if (!t) return;
         await apiFetch('/api/checks', {
@@ -156,15 +160,23 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ templateUniqueId: t.dataStorageUniqueId, templateSnapshot: t, checkedElements: [], answers: [] })
         });
-        loadChecks();
-    }
+      loadChecks();
+  }
 
-    document.getElementById('addSection').addEventListener('click', () => addSection());
-    document.getElementById('saveTemplate').addEventListener('click', saveTemplate);
+  async function loadLog() {
+      showError('');
+      const data = await apiFetch('/api/log');
+      document.getElementById('log').textContent = data.log || '';
+  }
 
-    fetchUser();
-    loadTemplates();
-    loadChecks();
+  document.getElementById('addSection').addEventListener('click', () => addSection());
+  document.getElementById('saveTemplate').addEventListener('click', saveTemplate);
+  document.getElementById('refreshLog').addEventListener('click', loadLog);
+
+  fetchUser();
+  loadTemplates();
+  loadChecks();
+  loadLog();
     </script>
 </body>
 </html>

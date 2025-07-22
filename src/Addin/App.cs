@@ -25,12 +25,15 @@ namespace ChecklistAddin
             );
             panel.AddItem(buttonData);
 
+            ChecklistServer.Logger.Log("Add-in started");
+
             return Result.Succeeded;
         }
 
         public Result OnShutdown(UIControlledApplication application)
         {
             ServerInstance?.Stop();
+            ChecklistServer.Logger.Log("Add-in shutdown");
             return Result.Succeeded;
         }
     }
@@ -62,6 +65,7 @@ namespace ChecklistAddin
             }
             catch (Exception ex)
             {
+                ChecklistServer.Logger.Log(ex);
                 message = ex.Message;
                 return Result.Failed;
             }

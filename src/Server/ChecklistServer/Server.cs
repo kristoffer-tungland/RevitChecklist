@@ -40,6 +40,7 @@ namespace ChecklistServer
             if (_listener.IsListening) return;
             _listener.Start();
             Console.WriteLine($"Server started at {_baseUrl}");
+            Logger.Log($"Server started at {_baseUrl}");
             _listener.BeginGetContext(OnContext, null);
         }
 
@@ -50,6 +51,7 @@ namespace ChecklistServer
                 _listener.Stop();
                 _listener.Close();
                 Console.WriteLine("Server stopped");
+                Logger.Log("Server stopped");
             }
         }
 
@@ -65,6 +67,7 @@ namespace ChecklistServer
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
+                Logger.Log(ex);
                 context.Response.StatusCode = 500;
                 var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { error = ex.Message }));
                 context.Response.OutputStream.Write(bytes, 0, bytes.Length);
@@ -99,6 +102,11 @@ namespace ChecklistServer
             if (req.HttpMethod == "GET" && req.Url.AbsolutePath == "/api/user")
             {
                 WriteJson(res, new { user = RevitApi.GetCurrentUsername() });
+                return;
+            }
+            if (req.HttpMethod == "GET" && req.Url.AbsolutePath == "/api/log")
+            {
+                WriteJson(res, new { log = Logger.ReadAll() });
                 return;
             }
             if (req.HttpMethod == "POST" && req.Url.AbsolutePath == "/api/select-elements")
