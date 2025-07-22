@@ -13,11 +13,24 @@ namespace ChecklistServer
     {
         private readonly HttpListener _listener;
         private readonly string _baseUrl;
+        private readonly string _indexHtml;
+
         public Server(string baseUrl)
         {
             _baseUrl = baseUrl;
             _listener = new HttpListener();
             _listener.Prefixes.Add(baseUrl);
+            _indexHtml = LoadIndexHtml();
+        }
+
+        private static string LoadIndexHtml()
+        {
+            var asm = typeof(Server).Assembly;
+            using var stream = asm.GetManifestResourceStream(typeof(Server).Namespace + ".index.html");
+            if (stream == null)
+                return "<html><body>index.html not found</body></html>";
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
         }
 
         public void Start()
@@ -65,6 +78,15 @@ namespace ChecklistServer
             var res = context.Response;
 
             Console.WriteLine($"{req.HttpMethod} {req.Url!.AbsolutePath}");
+
+            if (req.HttpMethod == "GET" && (req.Url.AbsolutePath == "/" || req.Url.AbsolutePath == "/index.html"))
+            {
+                var bytes = Encoding.UTF8.GetBytes(_indexHtml);
+                res.ContentType = "text/html";
+                res.ContentLength64 = bytes.Length;
+                res.OutputStream.Write(bytes, 0, bytes.Length);
+                return;
+            }
 
             if (req.HttpMethod == "GET" && req.Url.AbsolutePath == "/api/status")
             {
