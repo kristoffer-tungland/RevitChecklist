@@ -45,56 +45,68 @@ namespace ChecklistServer
 
         public static string SaveJson(string json, StorageType type, string transactionName, string? uniqueId = null)
         {
-            var doc = RevitApi.UIDoc.Document;
-            using var tx = new Transaction(doc, transactionName);
-            tx.Start();
-            DataStorage storage;
-            if (string.IsNullOrEmpty(uniqueId))
+            return RevitApi.Invoke(() =>
             {
-                storage = DataStorage.Create(doc);
-            }
-            else
-            {
-                storage = doc.GetElement(uniqueId) as DataStorage ?? DataStorage.Create(doc);
-            }
-            var entity = new Entity(GetSchema(type));
-            entity.Set("Json", json);
-            storage.SetEntity(entity);
-            tx.Commit();
-            return storage.UniqueId;
+                var doc = RevitApi.UIDoc.Document;
+                using var tx = new Transaction(doc, transactionName);
+                tx.Start();
+                DataStorage storage;
+                if (string.IsNullOrEmpty(uniqueId))
+                {
+                    storage = DataStorage.Create(doc);
+                }
+                else
+                {
+                    storage = doc.GetElement(uniqueId) as DataStorage ?? DataStorage.Create(doc);
+                }
+                var entity = new Entity(GetSchema(type));
+                entity.Set("Json", json);
+                storage.SetEntity(entity);
+                tx.Commit();
+                return storage.UniqueId;
+            });
         }
 
         public static string? GetJson(string uniqueId, StorageType type)
         {
-            var doc = RevitApi.UIDoc.Document;
-            var storage = doc.GetElement(uniqueId) as DataStorage;
-            if (storage == null) return null;
-            var entity = storage.GetEntity(GetSchema(type));
-            return entity.IsValid() ? entity.Get<string>("Json") : null;
+            return RevitApi.Invoke(() =>
+            {
+                var doc = RevitApi.UIDoc.Document;
+                var storage = doc.GetElement(uniqueId) as DataStorage;
+                if (storage == null) return null;
+                var entity = storage.GetEntity(GetSchema(type));
+                return entity.IsValid() ? entity.Get<string>("Json") : null;
+            });
         }
 
         public static void Delete(string uniqueId)
         {
-            var doc = RevitApi.UIDoc.Document;
-            using var tx = new Transaction(doc, "Delete DataStorage");
-            tx.Start();
-            var el = doc.GetElement(uniqueId);
-            if (el != null) doc.Delete(el.Id);
-            tx.Commit();
+            RevitApi.Invoke(() =>
+            {
+                var doc = RevitApi.UIDoc.Document;
+                using var tx = new Transaction(doc, "Delete DataStorage");
+                tx.Start();
+                var el = doc.GetElement(uniqueId);
+                if (el != null) doc.Delete(el.Id);
+                tx.Commit();
+            });
         }
 
         public static List<string> GetAll(StorageType type)
         {
-            var doc = RevitApi.UIDoc.Document;
-            var collector = new FilteredElementCollector(doc).OfClass(typeof(DataStorage));
-            var ids = new List<string>();
-            var schema = GetSchema(type);
-            foreach (DataStorage ds in collector)
+            return RevitApi.Invoke(() =>
             {
-                var entity = ds.GetEntity(schema);
-                if (entity.IsValid()) ids.Add(ds.UniqueId);
-            }
-            return ids;
+                var doc = RevitApi.UIDoc.Document;
+                var collector = new FilteredElementCollector(doc).OfClass(typeof(DataStorage));
+                var ids = new List<string>();
+                var schema = GetSchema(type);
+                foreach (DataStorage ds in collector)
+                {
+                    var entity = ds.GetEntity(schema);
+                    if (entity.IsValid()) ids.Add(ds.UniqueId);
+                }
+                return ids;
+            });
         }
     }
 }

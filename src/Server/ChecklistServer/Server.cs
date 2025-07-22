@@ -103,7 +103,10 @@ namespace ChecklistServer
                 using var reader = new StreamReader(req.InputStream, req.ContentEncoding);
                 var body = reader.ReadToEnd();
                 var payload = JsonSerializer.Deserialize<SelectElementsRequest>(body);
-                var elements = RevitApi.PromptForElementSelection(payload?.Message ?? string.Empty, payload?.Count == "multiple");
+                var elements = RevitApi.PromptForElementSelection(
+                    payload?.Message ?? string.Empty,
+                    payload?.Count == "multiple",
+                    payload?.AllowedCategories);
                 WriteJson(res, new { status = "ok", selectedElementUniqueIds = elements });
                 return;
             }
