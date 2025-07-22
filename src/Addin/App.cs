@@ -12,19 +12,13 @@ namespace ChecklistAddin
 
     public class App : IExternalApplication
     {
-        private ChecklistServer.Server? _server;
+        internal static ChecklistServer.Server? ServerInstance;
 
         public Result OnStartup(UIControlledApplication application)
         {
-            // Subscribe to Idling event to get UIApplication as soon as possible
-            application.Idling += OnIdling;
-
-            _server = new ChecklistServer.Server(AddinConfig.Url);
-            _server.Start();
-
             var panel = application.CreateRibbonPanel("Quality Checklist");
             var buttonData = new PushButtonData(
-                "OpenChecklist",
+                "StartChecklist",
                 "Checklist",
                 System.Reflection.Assembly.GetExecutingAssembly().Location,
                 typeof(OpenBrowserCommand).FullName
@@ -34,21 +28,9 @@ namespace ChecklistAddin
             return Result.Succeeded;
         }
 
-        private void OnIdling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e)
-        {
-            // Initialize RevitApi with UIApplication when Revit becomes idle
-            if (!ChecklistServer.RevitApi.IsInitialized && sender is UIApplication uiApp)
-            {
-                ChecklistServer.RevitApi.Initialize(uiApp);
-                
-                // Unsubscribe after initialization
-                uiApp.Idling -= OnIdling;
-            }
-        }
-
         public Result OnShutdown(UIControlledApplication application)
         {
-            _server?.Stop();
+            ServerInstance?.Stop();
             return Result.Succeeded;
         }
     }
@@ -60,12 +42,21 @@ namespace ChecklistAddin
         {
             try
             {
-                // Ensure RevitApi is initialized (backup initialization)
+                // Ensure RevitApi is initialized
                 if (!ChecklistServer.RevitApi.IsInitialized)
                 {
                     ChecklistServer.RevitApi.Initialize(commandData.Application);
                 }
-                
+
+                if (App.ServerInstance == null)
+                {
+                    App.ServerInstance = new ChecklistServer.Server(AddinConfig.Url);
+                }
+                if (!App.ServerInstance.IsRunning)
+                {
+                    App.ServerInstance.Start();
+                }
+
                 Process.Start(new ProcessStartInfo(AddinConfig.Url) { UseShellExecute = true });
                 return Result.Succeeded;
             }
