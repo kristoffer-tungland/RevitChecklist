@@ -3,31 +3,50 @@ using Autodesk.Revit.DB.ExtensibleStorage;
 
 namespace ChecklistServer
 {
+    public enum StorageType
+    {
+        Template,
+        Check
+    }
+
     public static class DataStorageService
     {
-        private static readonly Guid SchemaGuid = new("6ea71164-9b45-4c05-9c24-3fbfa1d11c77");
-        private static Schema? _schema;
+        private static readonly Guid TemplateSchemaGuid = new("da3f0c02-3d07-4f84-867b-dcbd82272d15");
+        private static readonly Guid CheckSchemaGuid = new("b14f6b43-afe7-46cd-b13f-565ff6562a68");
 
-        private static Schema Schema
+        private static Schema? _templateSchema;
+        private static Schema? _checkSchema;
+
+        private static Schema GetSchema(StorageType type)
         {
-            get
+            if (type == StorageType.Template)
             {
-                if (_schema != null) return _schema;
-                _schema = Schema.Lookup(SchemaGuid);
-                if (_schema != null) return _schema;
-                var builder = new SchemaBuilder(SchemaGuid);
+                if (_templateSchema != null) return _templateSchema;
+                _templateSchema = Schema.Lookup(TemplateSchemaGuid);
+                if (_templateSchema != null) return _templateSchema;
+                var builder = new SchemaBuilder(TemplateSchemaGuid);
                 builder.AddSimpleField("Json", typeof(string));
                 builder.SetReadAccessLevel(AccessLevel.Public);
                 builder.SetWriteAccessLevel(AccessLevel.Public);
-                _schema = builder.Finish();
-                return _schema;
+                _templateSchema = builder.Finish();
+                return _templateSchema;
             }
+
+            if (_checkSchema != null) return _checkSchema;
+            _checkSchema = Schema.Lookup(CheckSchemaGuid);
+            if (_checkSchema != null) return _checkSchema;
+            var b = new SchemaBuilder(CheckSchemaGuid);
+            b.AddSimpleField("Json", typeof(string));
+            b.SetReadAccessLevel(AccessLevel.Public);
+            b.SetWriteAccessLevel(AccessLevel.Public);
+            _checkSchema = b.Finish();
+            return _checkSchema;
         }
 
-        public static string SaveJson(string json, string? uniqueId = null)
+        public static string SaveJson(string json, StorageType type, string transactionName, string? uniqueId = null)
         {
             var doc = RevitApi.UIDoc.Document;
-            using var tx = new Transaction(doc, "Save DataStorage");
+            using var tx = new Transaction(doc, transactionName);
             tx.Start();
             DataStorage storage;
             if (string.IsNullOrEmpty(uniqueId))
@@ -38,19 +57,19 @@ namespace ChecklistServer
             {
                 storage = doc.GetElement(uniqueId) as DataStorage ?? DataStorage.Create(doc);
             }
-            var entity = new Entity(Schema);
+            var entity = new Entity(GetSchema(type));
             entity.Set("Json", json);
             storage.SetEntity(entity);
             tx.Commit();
             return storage.UniqueId;
         }
 
-        public static string? GetJson(string uniqueId)
+        public static string? GetJson(string uniqueId, StorageType type)
         {
             var doc = RevitApi.UIDoc.Document;
             var storage = doc.GetElement(uniqueId) as DataStorage;
             if (storage == null) return null;
-            var entity = storage.GetEntity(Schema);
+            var entity = storage.GetEntity(GetSchema(type));
             return entity.IsValid() ? entity.Get<string>("Json") : null;
         }
 
@@ -64,14 +83,15 @@ namespace ChecklistServer
             tx.Commit();
         }
 
-        public static List<string> GetAll()
+        public static List<string> GetAll(StorageType type)
         {
             var doc = RevitApi.UIDoc.Document;
             var collector = new FilteredElementCollector(doc).OfClass(typeof(DataStorage));
             var ids = new List<string>();
+            var schema = GetSchema(type);
             foreach (DataStorage ds in collector)
             {
-                var entity = ds.GetEntity(Schema);
+                var entity = ds.GetEntity(schema);
                 if (entity.IsValid()) ids.Add(ds.UniqueId);
             }
             return ids;
