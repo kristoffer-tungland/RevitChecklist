@@ -15,6 +15,7 @@
 <body>
     <h1>Revit Quality Checklist</h1>
     <div id="user"></div>
+    <div id="error" style="color:red"></div>
 
     <h2>Create Template</h2>
     <input id="tmplName" placeholder="Template name">
@@ -29,9 +30,28 @@
     <ul id="checks"></ul>
 
     <script>
+    function showError(msg) {
+        document.getElementById('error').textContent = msg;
+    }
+
+    async function apiFetch(url, options) {
+        try {
+            const resp = await fetch(url, options);
+            if (!resp.ok) {
+                let text = await resp.text();
+                try { const data = JSON.parse(text); text = data.error || text; } catch {}
+                throw new Error(text);
+            }
+            return await resp.json();
+        } catch (err) {
+            showError(err.message);
+            throw err;
+        }
+    }
+
     async function fetchUser() {
-        const resp = await fetch('/api/user');
-        const data = await resp.json();
+        showError('');
+        const data = await apiFetch('/api/user');
         document.getElementById('user').textContent = 'User: ' + data.user;
     }
 
@@ -68,8 +88,8 @@
     }
 
     async function loadTemplates() {
-        const resp = await fetch('/api/templates');
-        const tpls = await resp.json();
+        showError('');
+        const tpls = await apiFetch('/api/templates');
         const list = document.getElementById('templates');
         list.innerHTML = '';
         tpls.forEach(t => {
@@ -84,8 +104,8 @@
     }
 
     async function loadChecks() {
-        const resp = await fetch('/api/checks');
-        const checks = await resp.json();
+        showError('');
+        const checks = await apiFetch('/api/checks');
         const list = document.getElementById('checks');
         list.innerHTML = '';
         checks.forEach(c => {
@@ -96,6 +116,7 @@
     }
 
     async function saveTemplate() {
+        showError('');
         const name = document.getElementById('tmplName').value.trim();
         if (!name) return;
         const sections = [];
@@ -115,7 +136,7 @@
             });
             sections.push(sec);
         });
-        await fetch('/api/templates', {
+        await apiFetch('/api/templates', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, sections })
@@ -126,11 +147,11 @@
     }
 
     async function createCheck(tid) {
-        const resp = await fetch('/api/templates');
-        const templates = await resp.json();
+        showError('');
+        const templates = await apiFetch('/api/templates');
         const t = templates.find(x => x.id === tid);
         if (!t) return;
-        await fetch('/api/checks', {
+        await apiFetch('/api/checks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ templateUniqueId: t.dataStorageUniqueId, templateSnapshot: t, checkedElements: [], answers: [] })
