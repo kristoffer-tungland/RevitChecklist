@@ -15,6 +15,8 @@ namespace ChecklistServer
         private readonly string _baseUrl;
         private readonly string _indexHtml;
 
+        public bool IsRunning => _listener.IsListening;
+
         public Server(string baseUrl)
         {
             _baseUrl = baseUrl;
@@ -35,6 +37,7 @@ namespace ChecklistServer
 
         public void Start()
         {
+            if (_listener.IsListening) return;
             _listener.Start();
             Console.WriteLine($"Server started at {_baseUrl}");
             _listener.BeginGetContext(OnContext, null);
