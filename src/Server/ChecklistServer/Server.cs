@@ -119,7 +119,7 @@ namespace ChecklistServer
                 template.ModifiedBy = template.CreatedBy;
                 template.ModifiedDate = template.CreatedDate;
                 var json = JsonSerializer.Serialize(template);
-                template.DataStorageUniqueId = DataStorageService.SaveJson(json);
+                template.DataStorageUniqueId = DataStorageService.SaveJson(json, StorageType.Template, $"Created template {template.Name}");
                 WriteJson(res, template);
                 return;
             }
@@ -143,7 +143,7 @@ namespace ChecklistServer
                         tmpl.Archived = update.Archived;
                         tmpl.ModifiedBy = RevitApi.GetCurrentUsername();
                         tmpl.ModifiedDate = DateTime.UtcNow;
-                        DataStorageService.SaveJson(JsonSerializer.Serialize(tmpl), tmpl.DataStorageUniqueId);
+                        DataStorageService.SaveJson(JsonSerializer.Serialize(tmpl), StorageType.Template, $"Updated template {tmpl.Name}", tmpl.DataStorageUniqueId);
                         WriteJson(res, tmpl);
                         return;
                     }
@@ -176,7 +176,7 @@ namespace ChecklistServer
                     tmpl.Archived = true;
                     tmpl.ModifiedBy = RevitApi.GetCurrentUsername();
                     tmpl.ModifiedDate = DateTime.UtcNow;
-                    DataStorageService.SaveJson(JsonSerializer.Serialize(tmpl), tmpl.DataStorageUniqueId);
+                    DataStorageService.SaveJson(JsonSerializer.Serialize(tmpl), StorageType.Template, $"Updated template {tmpl.Name}", tmpl.DataStorageUniqueId);
                     WriteJson(res, tmpl);
                     return;
                 }
@@ -204,7 +204,7 @@ namespace ChecklistServer
                 check.ModifiedBy = check.CreatedBy;
                 check.ModifiedDate = check.CreatedDate;
                 var json = JsonSerializer.Serialize(check);
-                check.DataStorageUniqueId = DataStorageService.SaveJson(json);
+                check.DataStorageUniqueId = DataStorageService.SaveJson(json, StorageType.Check, $"Created check {check.Id}");
                 WriteJson(res, check);
                 return;
             }
@@ -241,7 +241,7 @@ namespace ChecklistServer
                         chk.Status = update.Status;
                         chk.ModifiedBy = RevitApi.GetCurrentUsername();
                         chk.ModifiedDate = DateTime.UtcNow;
-                        DataStorageService.SaveJson(JsonSerializer.Serialize(chk), chk.DataStorageUniqueId);
+                        DataStorageService.SaveJson(JsonSerializer.Serialize(chk), StorageType.Check, $"Updated check {chk.Id}", chk.DataStorageUniqueId);
                         WriteJson(res, chk);
                         return;
                     }
@@ -254,9 +254,9 @@ namespace ChecklistServer
         private static List<Template> LoadTemplates()
         {
             var list = new List<Template>();
-            foreach (var id in DataStorageService.GetAll())
+            foreach (var id in DataStorageService.GetAll(StorageType.Template))
             {
-                var json = DataStorageService.GetJson(id);
+                var json = DataStorageService.GetJson(id, StorageType.Template);
                 if (json == null) continue;
                 try
                 {
@@ -271,9 +271,9 @@ namespace ChecklistServer
         private static List<Check> LoadChecks()
         {
             var list = new List<Check>();
-            foreach (var id in DataStorageService.GetAll())
+            foreach (var id in DataStorageService.GetAll(StorageType.Check))
             {
-                var json = DataStorageService.GetJson(id);
+                var json = DataStorageService.GetJson(id, StorageType.Check);
                 if (json == null) continue;
                 try
                 {
