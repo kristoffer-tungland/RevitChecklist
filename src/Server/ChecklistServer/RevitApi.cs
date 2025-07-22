@@ -20,7 +20,8 @@ namespace ChecklistServer
             {
                 while (_queue.TryDequeue(out var action))
                 {
-                    try { action(); } catch { }
+                    try { action(); }
+                    catch (Exception ex) { Logger.Log(ex); }
                 }
             }
         }
@@ -65,8 +66,9 @@ namespace ChecklistServer
                     action();
                     tcs.SetResult(true);
                 }
-                catch (Exception ex)
-                {
+               catch (Exception ex)
+               {
+                    Logger.Log(ex);
                     tcs.SetException(ex);
                 }
             });
@@ -87,8 +89,9 @@ namespace ChecklistServer
                     result = func();
                     tcs.SetResult(true);
                 }
-                catch (Exception ex)
-                {
+               catch (Exception ex)
+               {
+                    Logger.Log(ex);
                     tcs.SetException(ex);
                 }
             });
