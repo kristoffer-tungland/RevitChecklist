@@ -16,6 +16,8 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\..\Client\index.html" />
+    <EmbeddedResource Include="..\..\Client\style.css" />
+    <EmbeddedResource Include="..\..\Client\app.js" />
   </ItemGroup>
 
 </Project>

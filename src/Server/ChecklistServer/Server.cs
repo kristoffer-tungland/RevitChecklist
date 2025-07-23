@@ -14,6 +14,8 @@ namespace ChecklistServer
         private readonly HttpListener _listener;
         private readonly string _baseUrl;
         private readonly string _indexHtml;
+        private readonly string _styleCss;
+        private readonly string _appJs;
 
         public bool IsRunning => _listener.IsListening;
 
@@ -22,15 +24,16 @@ namespace ChecklistServer
             _baseUrl = baseUrl;
             _listener = new HttpListener();
             _listener.Prefixes.Add(baseUrl);
-            _indexHtml = LoadIndexHtml();
+            _indexHtml = LoadResource("index.html");
+            _styleCss = LoadResource("style.css");
+            _appJs = LoadResource("app.js");
         }
 
-        private static string LoadIndexHtml()
+        private static string LoadResource(string name)
         {
             var asm = typeof(Server).Assembly;
-            using var stream = asm.GetManifestResourceStream(typeof(Server).Namespace + ".index.html");
-            if (stream == null)
-                return "<html><body>index.html not found</body></html>";
+            using var stream = asm.GetManifestResourceStream(typeof(Server).Namespace + "." + name);
+            if (stream == null) return string.Empty;
             using var reader = new StreamReader(stream);
             return reader.ReadToEnd();
         }
@@ -85,13 +88,32 @@ namespace ChecklistServer
 
             Console.WriteLine($"{req.HttpMethod} {req.Url!.AbsolutePath}");
 
-            if (req.HttpMethod == "GET" && (req.Url.AbsolutePath == "/" || req.Url.AbsolutePath == "/index.html"))
+            if (req.HttpMethod == "GET")
             {
-                var bytes = Encoding.UTF8.GetBytes(_indexHtml);
-                res.ContentType = "text/html";
-                res.ContentLength64 = bytes.Length;
-                res.OutputStream.Write(bytes, 0, bytes.Length);
-                return;
+                if (req.Url.AbsolutePath == "/" || req.Url.AbsolutePath == "/index.html")
+                {
+                    var bytes = Encoding.UTF8.GetBytes(_indexHtml);
+                    res.ContentType = "text/html";
+                    res.ContentLength64 = bytes.Length;
+                    res.OutputStream.Write(bytes, 0, bytes.Length);
+                    return;
+                }
+                if (req.Url.AbsolutePath == "/style.css")
+                {
+                    var bytes = Encoding.UTF8.GetBytes(_styleCss);
+                    res.ContentType = "text/css";
+                    res.ContentLength64 = bytes.Length;
+                    res.OutputStream.Write(bytes, 0, bytes.Length);
+                    return;
+                }
+                if (req.Url.AbsolutePath == "/app.js")
+                {
+                    var bytes = Encoding.UTF8.GetBytes(_appJs);
+                    res.ContentType = "application/javascript";
+                    res.ContentLength64 = bytes.Length;
+                    res.OutputStream.Write(bytes, 0, bytes.Length);
+                    return;
+                }
             }
 
             if (req.HttpMethod == "GET" && req.Url.AbsolutePath == "/api/status")
